@@ -1,0 +1,15 @@
+[package]
+name = "rconc"
+version = "0.1.0"
+authors = ["Klemens Schölhorn <klemens@schoelhorn.eu>"]
+
+[dependencies]
+error-chain = "0.5"
+rcon = "^0.1"
+app_dirs = "^1"
+rust-ini = "^0.9"
+itertools = "^0.5"
+
+[dependencies.clap]
+version = "^2"
+default-features = false
