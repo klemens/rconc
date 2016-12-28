@@ -1,7 +1,9 @@
-use app_dirs::{app_root, AppInfo, AppDataType};
+use app_dirs::{AppInfo, AppDataType, get_app_root};
 use ini::Ini;
 
 use errors::*;
+
+use std::fs::File;
 
 const APP_INFO: AppInfo = AppInfo {
     name: "rconc",
@@ -14,14 +16,15 @@ pub struct Config {
 
 impl Config {
     pub fn load() -> Result<Config> {
-        let config_path = try!(app_root(AppDataType::UserConfig, &APP_INFO)
-            .chain_err(|| "could not create config directory"));
+        let config_path = get_app_root(AppDataType::UserConfig, &APP_INFO)
+            .chain_err(|| "could not find config directory")?;
+        let config_file_path = config_path.join("config");
 
-        let config_file = config_path.join("config");
-
-        let ini = if config_file.exists() {
-            try!(Ini::load_from_file(&config_file.to_string_lossy())
-                .chain_err(|| "could not open config file"))
+        let ini = if config_file_path.exists() {
+            let mut config_file = File::open(config_file_path)
+                .chain_err(|| "could not open config file")?;
+            Ini::read_from(&mut config_file)
+                .chain_err(|| "could not parse config file")?
         } else {
             Ini::new()
         };
