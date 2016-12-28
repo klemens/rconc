@@ -12,7 +12,8 @@ mod config;
 #[macro_use]
 mod errors;
 
-use std::io::Write;
+use std::borrow::Cow;
+use std::io::{BufRead, stdin, stdout, Write};
 
 fn main() {
     if let Err(e) = _main() {
@@ -34,8 +35,26 @@ fn _main() -> Result<(), i32> {
             ("add", Some(args)) => {
                 let server = args.value_of("name").unwrap();
                 if config.get(server).is_none() {
-                    config.set(server, args.value_of("address").unwrap(),
-                                       args.value_of("password").unwrap());
+                    let address = args.value_of("address").unwrap();
+                    let password = args.value_of("password").unwrap();
+
+                    let password = if password == "-" {
+                        print!("Enter password: ");
+                        stdout().flush().expect("Could not flush stdout");
+
+                        let stdin = stdin();
+                        let password = stdin.lock().lines().next();
+                        if let Some(Ok(password)) = password {
+                            Cow::Owned(password)
+                        } else {
+                            errorln!("Could not read password from stdin");
+                            return Err(23)
+                        }
+                    } else {
+                        Cow::Borrowed(password)
+                    };
+
+                    config.set(server, address, &password);
                     config.save().map_err(|e| {
                         errorln!("Could not save the config file: {}", e);
                         21

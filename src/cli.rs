@@ -30,7 +30,7 @@ pub fn parse_cli<'a>() -> ArgMatches<'a> {
                     .help("The host or ip and port of the rcon server")
                     .required(true))
                 .arg(Arg::with_name("password")
-                    .help("The rcon password")
+                    .help("The rcon password or - to read it from stdin")
                     .required(true)))
             .subcommand(SubCommand::with_name("remove")
                 .about("Remove a server")
