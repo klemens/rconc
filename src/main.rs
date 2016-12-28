@@ -28,6 +28,25 @@ fn _main() -> Result<(), i32> {
         2
     })?;
 
+    // server management (adding, removing, listing)
+    if let ("server", Some(args)) = args.subcommand() {
+        match args.subcommand() {
+            ("list", Some(args)) => {
+                for server in config.servers() {
+                    if let Some((address, password)) = config.get(server) {
+                        if args.is_present("show-passwords") {
+                            println!("{}: {} ({})", server, address, password);
+                        } else {
+                            println!("{}: {}", server, address);
+                        }
+                    }
+                }
+            }
+            _ => unreachable!()
+        }
+        return Ok(());
+    }
+
     let server = args.value_of("server").unwrap();
     let (address, password) = config.get(server).ok_or_else(|| {
         errorln!("Server {} is not configured", server);

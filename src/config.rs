@@ -1,8 +1,9 @@
 use app_dirs::{AppInfo, AppDataType, get_app_root};
-use ini::Ini;
+use ini::ini::{Ini, Properties};
 
 use errors::*;
 
+use std::collections::hash_map::Keys;
 use std::fs::File;
 
 const APP_INFO: AppInfo = AppInfo {
@@ -39,6 +40,35 @@ impl Config {
                       self.ini.get_from(Some(server), "password")) {
             (Some(addr), Some(pass)) => Some((addr, pass)),
             _ => None
+        }
+    }
+
+    pub fn servers(&self) -> Servers {
+        // This struct can be replaced with a filter_map when
+        // returning Traits becomes possible (-> impl Iterator)
+        Servers {
+            keys: self.ini.sections(),
+        }
+    }
+}
+
+pub struct Servers<'a> {
+    keys: Keys<'a, Option<String>, Properties>,
+}
+
+impl<'a> Iterator for Servers<'a> {
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(key) = self.keys.next() {
+            if let &Some(ref server) = key {
+                Some(&server)
+            } else {
+                // There is at most one empty section in an ini file
+                self.next()
+            }
+        } else {
+            None
         }
     }
 }
