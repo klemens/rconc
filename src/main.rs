@@ -23,7 +23,7 @@ fn main() {
 fn _main() -> Result<(), i32> {
     let args = cli::parse_cli();
 
-    let config = config::Config::load().map_err(|e| {
+    let mut config = config::Config::load().map_err(|e| {
         errorln!("Error while loading config: {:?}", e);
         2
     })?;
@@ -31,6 +31,33 @@ fn _main() -> Result<(), i32> {
     // server management (adding, removing, listing)
     if let ("server", Some(args)) = args.subcommand() {
         match args.subcommand() {
+            ("add", Some(args)) => {
+                let server = args.value_of("name").unwrap();
+                if config.get(server).is_none() {
+                    config.set(server, args.value_of("address").unwrap(),
+                                       args.value_of("password").unwrap());
+                    config.save().map_err(|e| {
+                        errorln!("Could not save the config file: {}", e);
+                        21
+                    })?;
+                } else {
+                    errorln!("Server {} already exists", server);
+                    return Err(20);
+                }
+            }
+            ("remove", Some(args)) => {
+                let server = args.value_of("name").unwrap();
+                if config.get(server).is_some() {
+                    config.remove(server);
+                    config.save().map_err(|e| {
+                        errorln!("Could not save the config file: {}", e);
+                        21
+                    })?;
+                } else {
+                    errorln!("Server {} does not exist", server);
+                    return Err(22);
+                }
+            }
             ("list", Some(args)) => {
                 for server in config.servers() {
                     if let Some((address, password)) = config.get(server) {
