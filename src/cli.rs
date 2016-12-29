@@ -12,7 +12,7 @@ pub fn parse_cli<'a>() -> ArgMatches<'a> {
                 rconc server remove <name>\n    \
                 rconc server list")
         .arg(Arg::with_name("server")
-            .help("The short name of the server")
+            .help("The short name of a configured server or a bare address including port, in which case the password will be read from the environment (RCONC_SERVER_PASSWORD) or stdin")
             .required(true))
         .arg(Arg::with_name("command")
             .help("The command to execute (multiple arguments will be executed as one command separated by spaces)")

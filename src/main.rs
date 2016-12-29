@@ -36,6 +36,11 @@ fn _main() -> Result<(), i32> {
             ("add", Some(args)) => {
                 let server = args.value_of("name").unwrap();
                 if config.get(server).is_none() {
+                    if server.contains(":") {
+                        errorln!("Short names must not contain colons");
+                        return Err(24);
+                    }
+
                     let address = args.value_of("address").unwrap();
                     let password = args.value_of("password").unwrap();
 
@@ -88,12 +93,19 @@ fn _main() -> Result<(), i32> {
     }
 
     let server = args.value_of("server").unwrap();
-    let (address, password) = config.get(server).ok_or_else(|| {
-        errorln!("Server {} is not configured", server);
-        3
-    })?;
+    let (address, password) = if server.contains(":") {
+        read_external_password().map(|p| (server, Cow::Owned(p))).map_err(|e| {
+            errorln!("Could not read password: {}", e);
+            23
+        })?
+    } else {
+        config.get(server).map(|(a, p)| (a, p.into())).ok_or_else(|| {
+            errorln!("Server {} is not configured", server);
+            3
+        })?
+    };
 
-    let mut conn = rcon::Connection::connect(address, password).map_err(|e| {
+    let mut conn = rcon::Connection::connect(address, &password).map_err(|e| {
         match e {
             rcon::Error::Auth => {
                 errorln!("The server rejected our password");
