@@ -13,6 +13,7 @@ mod config;
 mod errors;
 
 use std::borrow::Cow;
+use std::env;
 use std::io::{BufRead, stdin, stdout, Write};
 
 fn main() {
@@ -39,17 +40,10 @@ fn _main() -> Result<(), i32> {
                     let password = args.value_of("password").unwrap();
 
                     let password = if password == "-" {
-                        print!("Enter password: ");
-                        stdout().flush().expect("Could not flush stdout");
-
-                        let stdin = stdin();
-                        let password = stdin.lock().lines().next();
-                        if let Some(Ok(password)) = password {
-                            Cow::Owned(password)
-                        } else {
-                            errorln!("Could not read password from stdin");
-                            return Err(23)
-                        }
+                        Cow::Owned(read_external_password().map_err(|e| {
+                            errorln!("Could not read password: {}", e);
+                            23
+                        })?)
                     } else {
                         Cow::Borrowed(password)
                     };
@@ -128,4 +122,27 @@ fn _main() -> Result<(), i32> {
     })?);
 
     Ok(())
+}
+
+/// Read the password from an external source.
+///
+/// First it tries to use the environment variable RCONC_SERVER_PASSWORD.
+/// If it is not set, the password is read from stdin up to first newline/eof.
+fn read_external_password() -> errors::Result<String> {
+    if let Some(password) = env::var_os("RCONC_SERVER_PASSWORD") {
+        return password.into_string()
+            .map_err(|_| "Password is not a valid utf-8 string".into());
+    }
+
+    print!("Enter password: ");
+    stdout().flush().expect("Could not flush stdout");
+
+    let stdin = stdin();
+    let password = stdin.lock().lines().next();
+
+    if let Some(Ok(password)) = password {
+        Ok(password)
+    } else {
+        Err("Could not read password from stdin".into())
+    }
 }
