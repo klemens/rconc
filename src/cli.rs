@@ -6,6 +6,7 @@ pub fn parse_cli<'a>() -> ArgMatches<'a> {
         .setting(AppSettings::SubcommandsNegateReqs)
         .setting(AppSettings::VersionlessSubcommands)
         .setting(AppSettings::ArgRequiredElseHelp)
+        .setting(AppSettings::ArgsNegateSubcommands)
         .set_term_width(80)
         .usage("rconc <server> <command>...\n    \
                 rconc server add <name> <address> <password>\n    \
