@@ -4,11 +4,11 @@ version = "0.1.1"
 authors = ["Klemens Schölhorn <klemens@schoelhorn.eu>"]
 
 [dependencies]
-error-chain = "0.5"
+error-chain = "0.12.2"
 rcon = "^0.1"
 app_dirs = "^1"
-rust-ini = "^0.9"
-itertools = "^0.5"
+rust-ini = "0.15.2"
+itertools = "0.9.0"
 
 [dependencies.clap]
 version = "^2"
