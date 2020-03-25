@@ -1,7 +1,7 @@
 use app_dirs::{app_root, AppInfo, AppDataType, get_app_root};
 use ini::ini::Ini;
 
-use errors::*;
+use crate::errors::*;
 
 use std::fs::File;
 

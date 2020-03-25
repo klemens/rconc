@@ -2,7 +2,7 @@ use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 
 pub fn parse_cli<'a>() -> ArgMatches<'a> {
     App::new("rconc")
-        .version(crate_version!())
+        .version(clap::crate_version!())
         .setting(AppSettings::SubcommandsNegateReqs)
         .setting(AppSettings::VersionlessSubcommands)
         .setting(AppSettings::ArgRequiredElseHelp)

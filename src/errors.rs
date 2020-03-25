@@ -1,4 +1,4 @@
-error_chain! { }
+error_chain::error_chain! { }
 
 macro_rules! errorln(
     ($($arg:tt)*) => { {

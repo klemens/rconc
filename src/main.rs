@@ -1,12 +1,3 @@
-extern crate app_dirs;
-#[macro_use]
-extern crate clap;
-#[macro_use]
-extern crate error_chain;
-extern crate ini;
-extern crate itertools;
-extern crate rcon;
-
 mod cli;
 mod config;
 #[macro_use]

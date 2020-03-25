@@ -2,6 +2,7 @@
 name = "rconc"
 version = "0.1.1"
 authors = ["Klemens Schölhorn <klemens@schoelhorn.eu>"]
+edition = "2018"
 
 [dependencies]
 error-chain = "0.12.2"
