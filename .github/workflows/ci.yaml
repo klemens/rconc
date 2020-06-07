@@ -1,4 +1,8 @@
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '25 3 3/15 * *' # twice a month
 
 name: Continuous integration
 
