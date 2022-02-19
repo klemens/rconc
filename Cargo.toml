@@ -1,6 +1,6 @@
 [package]
 name = "rconc"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Klemens Schölhorn <klemens@schoelhorn.eu>"]
 edition = "2018"
 
