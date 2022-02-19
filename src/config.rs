@@ -1,24 +1,29 @@
-use app_dirs::{app_root, AppInfo, AppDataType, get_app_root};
-use ini::ini::Ini;
+use directories;
+use ini::Ini;
 
 use crate::errors::*;
 
-use std::fs::File;
-
-const APP_INFO: AppInfo = AppInfo {
-    name: "rconc",
-    author: "Klemens Schölhorn",
-};
+use std::{fs::{File, create_dir_all}, path::PathBuf};
 
 pub struct Config {
     ini: Ini,
 }
 
+fn get_config_file_path() -> Result<PathBuf> {
+    let project_dirs = directories::ProjectDirs::from(
+        "io",
+        "Klemens",
+        "rconc"
+    ).chain_err(|| "could not find config directory")?;
+    let config_dir = project_dirs.config_dir();
+    create_dir_all(&config_dir)
+        .chain_err(|| "could not create config dir")?;
+    Ok(config_dir.join("config"))
+}
+
 impl Config {
     pub fn load() -> Result<Config> {
-        let config_path = get_app_root(AppDataType::UserConfig, &APP_INFO)
-            .chain_err(|| "could not find config directory")?;
-        let config_file_path = config_path.join("config");
+        let config_file_path = get_config_file_path()?;
 
         let ini = if config_file_path.exists() {
             let mut config_file = File::open(config_file_path)
@@ -35,9 +40,7 @@ impl Config {
     }
 
     pub fn save(&self) -> Result<()> {
-        let config_path = app_root(AppDataType::UserConfig, &APP_INFO)
-            .chain_err(|| "could not create config directory")?;
-        let config_file_path = config_path.join("config");
+        let config_file_path = get_config_file_path()?;
 
         let mut config_file = File::create(config_file_path)
             .chain_err(|| "could not open config file")?;

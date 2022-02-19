@@ -3,17 +3,20 @@ mod config;
 #[macro_use]
 mod errors;
 
+use rcon::{AsyncStdStream, Connection};
+
 use std::borrow::Cow;
 use std::env;
 use std::io::{BufRead, stdin, stdout, Write};
 
 fn main() {
-    if let Err(e) = _main() {
+    let result = async_std::task::block_on(_main());
+    if let Err(e) = result {
         std::process::exit(e);
     }
 }
 
-fn _main() -> Result<(), i32> {
+async fn _main() -> Result<(), i32> {
     let args = cli::parse_cli();
 
     let mut config = config::Config::load().map_err(|e| {
@@ -96,22 +99,26 @@ fn _main() -> Result<(), i32> {
         })?
     };
 
-    let mut conn = rcon::Connection::connect(address, &password).map_err(|e| {
-        match e {
-            rcon::Error::Auth => {
-                errorln!("The server rejected our password");
-                11
+    let mut conn = <Connection<AsyncStdStream>>::builder()
+        .enable_minecraft_quirks(true)
+        .connect(address, &password)
+        .await
+        .map_err(|e| {
+            match e {
+                rcon::Error::Auth => {
+                    errorln!("The server rejected our password");
+                    11
+                }
+                _ => {
+                    errorln!("Could not connect to {}: {}", address, e);
+                    10
+                }
             }
-            _ => {
-                errorln!("Could not connect to {}: {}", address, e);
-                10
-            }
-        }
     })?;
 
     let command = itertools::join(args.values_of("command").unwrap(), " ");
 
-    println!("{}", conn.cmd(&command).map_err(|e| {
+    println!("{}", conn.cmd(&command).await.map_err(|e| {
         match e {
             rcon::Error::CommandTooLong => {
                 errorln!("The given command is too long");
