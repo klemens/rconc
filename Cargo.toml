@@ -1,17 +1,17 @@
 [package]
 name = "rconc"
-version = "0.1.4"
+version = "0.2.0"
 authors = ["Klemens Schölhorn <klemens@schoelhorn.eu>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-async-std = "^1.9.0"
-error-chain = "0.12.2"
-directories = "^4.0"
-rust-ini = "^0.17.0"
-itertools = "^0.10.3"
-clap = "^2"
+async-std = "1.12"
+error-chain = "0.12"
+directories = "5"
+rust-ini = "0.18"
+itertools = "0.10"
+clap = { version = "4", features = ["cargo"] }
 
 [dependencies.rcon]
-version = "^0.6"
+version = "0.6"
 features = ["rt-async-std"]
