@@ -30,7 +30,7 @@ async fn _main() -> Result<(), i32> {
             Some(("add", args)) => {
                 let server: String = args.get_one::<String>("name").unwrap().clone();
                 if config.get(&server).is_none() {
-                    if server.contains(":") {
+                    if server.contains(':') {
                         errorln!("Short names must not contain colons");
                         return Err(24);
                     }
@@ -87,7 +87,7 @@ async fn _main() -> Result<(), i32> {
     }
 
     let server: String = args.get_one::<String>("server").unwrap().clone();
-    let (address, password): (String, String) = if server.contains(":") {
+    let (address, password): (String, String) = if server.contains(':') {
         read_external_password()
             .map(|p| (server.clone(), p))
             .map_err(|e| {
@@ -131,7 +131,7 @@ async fn _main() -> Result<(), i32> {
         let mut buf = String::new();
 
         loop {
-            print!("{} >", &server);
+            print!("{} > ", &server);
             stdout.flush().unwrap();
             stdin.read_line(&mut buf).map_err(|_| 15)?;
 
