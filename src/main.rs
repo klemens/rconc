@@ -3,7 +3,6 @@ mod config;
 #[macro_use]
 mod errors;
 
-use clap::Parser;
 use rcon::{AsyncStdStream, Connection};
 
 use std::borrow::Cow;
@@ -89,10 +88,12 @@ async fn _main() -> Result<(), i32> {
 
     let server: String = args.get_one::<String>("server").unwrap().clone();
     let (address, password): (String, String) = if server.contains(":") {
-        read_external_password().map(|p| (server, p)).map_err(|e| {
-            errorln!("Could not read password: {}", e);
-            23
-        })?
+        read_external_password()
+            .map(|p| (server.clone(), p))
+            .map_err(|e| {
+                errorln!("Could not read password: {}", e);
+                23
+            })?
     } else {
         config
             .get(&server)
@@ -118,27 +119,44 @@ async fn _main() -> Result<(), i32> {
             }
         })?;
 
-    let interactive = args.contains_id("interactive");
-    println!("interactive: {}", interactive);
+    if let Some(commands) = args.get_many::<String>("command") {
+        let command = itertools::join(commands, " ");
 
-    let command = itertools::join(args.get_many::<String>("command").unwrap(), " ");
+        execute_command(&mut conn, &command).await?;
+    } else {
+        println!("No command specified, using interactive shell");
+        println!("Use CTRL + C to exit");
+        let stdin = stdin();
+        let mut stdout = stdout();
+        let mut buf = String::new();
 
+        loop {
+            print!("{} >", &server);
+            stdout.flush().unwrap();
+            stdin.read_line(&mut buf).map_err(|_| 15)?;
+
+            execute_command(&mut conn, buf.trim()).await?;
+            buf.clear();
+        }
+    }
+
+    Ok(())
+}
+
+async fn execute_command(conn: &mut Connection<AsyncStdStream>, cmd: &str) -> Result<(), i32> {
     println!(
         "{}",
-        conn.cmd(&command).await.map_err(|e| {
-            match e {
-                rcon::Error::CommandTooLong => {
-                    errorln!("The given command is too long");
-                    13
-                }
-                _ => {
-                    errorln!("Could not execute command {}: {}", command, e);
-                    12
-                }
+        conn.cmd(cmd).await.map_err(|e| match e {
+            rcon::Error::CommandTooLong => {
+                errorln!("The given command is too long");
+                13
+            }
+            _ => {
+                errorln!("Could not execute command {}: {}", cmd, e);
+                12
             }
         })?
     );
-
     Ok(())
 }
 

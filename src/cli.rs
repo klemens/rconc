@@ -13,7 +13,6 @@ pub fn parse_cli() -> ArgMatches {
             .required(true))
         .arg(Arg::new("command")
             .help("The command to execute (multiple arguments will be executed as one command separated by spaces)")
-            .required(true)
             .action(ArgAction::Append))
         .subcommand(Command::new("server")
             .about("Manage the list of servers")
