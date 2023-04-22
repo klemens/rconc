@@ -7,8 +7,8 @@ edition = "2018"
 [dependencies]
 async-std = "1.12"
 error-chain = "0.12"
-directories = "4"
-rust-ini = "0.17"
+directories = "5"
+rust-ini = "0.18"
 itertools = "0.10"
 clap = { version = "4", features = ["cargo"] }
 
