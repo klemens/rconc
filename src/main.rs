@@ -20,7 +20,7 @@ async fn _main() -> Result<(), i32> {
     let args = cli::parse_cli();
 
     let mut config = config::Config::load().map_err(|e| {
-        errorln!("Error while loading config: {:?}", e);
+        eprintln!("Error while loading config: {:?}", e);
         2
     })?;
 
@@ -31,7 +31,7 @@ async fn _main() -> Result<(), i32> {
                 let server: String = args.get_one::<String>("name").unwrap().clone();
                 if config.get(&server).is_none() {
                     if server.contains(':') {
-                        errorln!("Short names must not contain colons");
+                        eprintln!("Short names must not contain colons");
                         return Err(24);
                     }
 
@@ -40,7 +40,7 @@ async fn _main() -> Result<(), i32> {
 
                     let password = if password == "-" {
                         Cow::Owned(read_external_password().map_err(|e| {
-                            errorln!("Could not read password: {}", e);
+                            eprintln!("Could not read password: {}", e);
                             23
                         })?)
                     } else {
@@ -49,11 +49,11 @@ async fn _main() -> Result<(), i32> {
 
                     config.set(&server, &address, &password);
                     config.save().map_err(|e| {
-                        errorln!("Could not save the config file: {}", e);
+                        eprintln!("Could not save the config file: {}", e);
                         21
                     })?;
                 } else {
-                    errorln!("Server {} already exists", server);
+                    eprintln!("Server {} already exists", server);
                     return Err(20);
                 }
             }
@@ -62,11 +62,11 @@ async fn _main() -> Result<(), i32> {
                 if config.get(&server).is_some() {
                     config.remove(&server);
                     config.save().map_err(|e| {
-                        errorln!("Could not save the config file: {}", e);
+                        eprintln!("Could not save the config file: {}", e);
                         21
                     })?;
                 } else {
-                    errorln!("Server {} does not exist", server);
+                    eprintln!("Server {} does not exist", server);
                     return Err(22);
                 }
             }
@@ -91,7 +91,7 @@ async fn _main() -> Result<(), i32> {
         read_external_password()
             .map(|p| (server.clone(), p))
             .map_err(|e| {
-                errorln!("Could not read password: {}", e);
+                eprintln!("Could not read password: {}", e);
                 23
             })?
     } else {
@@ -99,7 +99,7 @@ async fn _main() -> Result<(), i32> {
             .get(&server)
             .map(|(a, p)| (a.into(), p.into()))
             .ok_or_else(|| {
-                errorln!("Server {} is not configured", server);
+                eprintln!("Server {} is not configured", server);
                 3
             })?
     };
@@ -110,11 +110,11 @@ async fn _main() -> Result<(), i32> {
         .await
         .map_err(|e| match e {
             rcon::Error::Auth => {
-                errorln!("The server rejected our password");
+                eprintln!("The server rejected our password");
                 11
             }
             _ => {
-                errorln!("Could not connect to {}: {}", address, e);
+                eprintln!("Could not connect to {}: {}", address, e);
                 10
             }
         })?;
@@ -148,11 +148,11 @@ async fn execute_command(conn: &mut Connection<AsyncStdStream>, cmd: &str) -> Re
         "{}",
         conn.cmd(cmd).await.map_err(|e| match e {
             rcon::Error::CommandTooLong => {
-                errorln!("The given command is too long");
+                eprintln!("The given command is too long");
                 13
             }
             _ => {
-                errorln!("Could not execute command {}: {}", cmd, e);
+                eprintln!("Could not execute command {}: {}", cmd, e);
                 12
             }
         })?
