@@ -5,13 +5,13 @@ authors = ["Klemens Schölhorn <klemens@schoelhorn.eu>"]
 edition = "2018"
 
 [dependencies]
-async-std = "^1.9.0"
-error-chain = "0.12.2"
-directories = "^4.0"
-rust-ini = "^0.17.0"
-itertools = "^0.10.3"
-clap = "^2"
+async-std = "1.12"
+error-chain = "0.12"
+directories = "4"
+rust-ini = "0.17"
+itertools = "0.10"
+clap = { version = "4", features = ["cargo"] }
 
 [dependencies.rcon]
-version = "^0.6"
+version = "0.6"
 features = ["rt-async-std"]

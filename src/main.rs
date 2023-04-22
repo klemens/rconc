@@ -3,11 +3,12 @@ mod config;
 #[macro_use]
 mod errors;
 
+use clap::Parser;
 use rcon::{AsyncStdStream, Connection};
 
 use std::borrow::Cow;
 use std::env;
-use std::io::{BufRead, stdin, stdout, Write};
+use std::io::{stdin, stdout, BufRead, Write};
 
 fn main() {
     let result = async_std::task::block_on(_main());
@@ -25,18 +26,18 @@ async fn _main() -> Result<(), i32> {
     })?;
 
     // server management (adding, removing, listing)
-    if let ("server", Some(args)) = args.subcommand() {
+    if let Some(("server", args)) = args.subcommand() {
         match args.subcommand() {
-            ("add", Some(args)) => {
-                let server = args.value_of("name").unwrap();
-                if config.get(server).is_none() {
+            Some(("add", args)) => {
+                let server: String = args.get_one::<String>("name").unwrap().clone();
+                if config.get(&server).is_none() {
                     if server.contains(":") {
                         errorln!("Short names must not contain colons");
                         return Err(24);
                     }
 
-                    let address = args.value_of("address").unwrap();
-                    let password = args.value_of("password").unwrap();
+                    let address: String = args.get_one::<String>("address").unwrap().clone();
+                    let password: String = args.get_one::<String>("password").unwrap().clone();
 
                     let password = if password == "-" {
                         Cow::Owned(read_external_password().map_err(|e| {
@@ -44,10 +45,10 @@ async fn _main() -> Result<(), i32> {
                             23
                         })?)
                     } else {
-                        Cow::Borrowed(password)
+                        Cow::Borrowed(&password)
                     };
 
-                    config.set(server, address, &password);
+                    config.set(&server, &address, &password);
                     config.save().map_err(|e| {
                         errorln!("Could not save the config file: {}", e);
                         21
@@ -57,10 +58,10 @@ async fn _main() -> Result<(), i32> {
                     return Err(20);
                 }
             }
-            ("remove", Some(args)) => {
-                let server = args.value_of("name").unwrap();
-                if config.get(server).is_some() {
-                    config.remove(server);
+            Some(("remove", args)) => {
+                let server: String = args.get_one::<String>("name").unwrap().clone();
+                if config.get(&server).is_some() {
+                    config.remove(&server);
                     config.save().map_err(|e| {
                         errorln!("Could not save the config file: {}", e);
                         21
@@ -70,10 +71,10 @@ async fn _main() -> Result<(), i32> {
                     return Err(22);
                 }
             }
-            ("list", Some(args)) => {
+            Some(("list", args)) => {
                 for server in config.servers() {
                     if let Some((address, password)) = config.get(server) {
-                        if args.is_present("show-passwords") {
+                        if args.contains_id("show-passwords") {
                             println!("{}: {} ({})", server, address, password);
                         } else {
                             println!("{}: {}", server, address);
@@ -81,55 +82,62 @@ async fn _main() -> Result<(), i32> {
                     }
                 }
             }
-            _ => unreachable!()
+            _ => unreachable!(),
         }
         return Ok(());
     }
 
-    let server = args.value_of("server").unwrap();
-    let (address, password) = if server.contains(":") {
-        read_external_password().map(|p| (server, Cow::Owned(p))).map_err(|e| {
+    let server: String = args.get_one::<String>("server").unwrap().clone();
+    let (address, password): (String, String) = if server.contains(":") {
+        read_external_password().map(|p| (server, p)).map_err(|e| {
             errorln!("Could not read password: {}", e);
             23
         })?
     } else {
-        config.get(server).map(|(a, p)| (a, p.into())).ok_or_else(|| {
-            errorln!("Server {} is not configured", server);
-            3
-        })?
+        config
+            .get(&server)
+            .map(|(a, p)| (a.into(), p.into()))
+            .ok_or_else(|| {
+                errorln!("Server {} is not configured", server);
+                3
+            })?
     };
 
     let mut conn = <Connection<AsyncStdStream>>::builder()
         .enable_minecraft_quirks(true)
-        .connect(address, &password)
+        .connect(&address, &password)
         .await
-        .map_err(|e| {
-            match e {
-                rcon::Error::Auth => {
-                    errorln!("The server rejected our password");
-                    11
-                }
-                _ => {
-                    errorln!("Could not connect to {}: {}", address, e);
-                    10
-                }
-            }
-    })?;
-
-    let command = itertools::join(args.values_of("command").unwrap(), " ");
-
-    println!("{}", conn.cmd(&command).await.map_err(|e| {
-        match e {
-            rcon::Error::CommandTooLong => {
-                errorln!("The given command is too long");
-                13
+        .map_err(|e| match e {
+            rcon::Error::Auth => {
+                errorln!("The server rejected our password");
+                11
             }
             _ => {
-                errorln!("Could not execute command {}: {}", command, e);
-                12
+                errorln!("Could not connect to {}: {}", address, e);
+                10
             }
-        }
-    })?);
+        })?;
+
+    let interactive = args.contains_id("interactive");
+    println!("interactive: {}", interactive);
+
+    let command = itertools::join(args.get_many::<String>("command").unwrap(), " ");
+
+    println!(
+        "{}",
+        conn.cmd(&command).await.map_err(|e| {
+            match e {
+                rcon::Error::CommandTooLong => {
+                    errorln!("The given command is too long");
+                    13
+                }
+                _ => {
+                    errorln!("Could not execute command {}: {}", command, e);
+                    12
+                }
+            }
+        })?
+    );
 
     Ok(())
 }
@@ -140,7 +148,8 @@ async fn _main() -> Result<(), i32> {
 /// If it is not set, the password is read from stdin up to first newline/eof.
 fn read_external_password() -> errors::Result<String> {
     if let Some(password) = env::var_os("RCONC_SERVER_PASSWORD") {
-        return password.into_string()
+        return password
+            .into_string()
             .map_err(|_| "Password is not a valid utf-8 string".into());
     }
 
