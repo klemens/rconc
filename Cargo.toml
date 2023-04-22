@@ -2,7 +2,7 @@
 name = "rconc"
 version = "0.2.0"
 authors = ["Klemens Schölhorn <klemens@schoelhorn.eu>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 async-std = "1.12"
